@@ -1,12 +1,13 @@
-# Bar Animation Documentation
+# Chameleon Flipper - Animações Contextuais
 
-## Overview
+## 🎬 Sistema de Animações
 
-The Chameleon Ultra app features a fun animated scene that plays when the device successfully connects to the Flipper Zero via USB or Bluetooth.
+O projeto implementa um sistema completo de animações contextuais onde o **Camaleão** (representando o Chameleon Ultra) e o **Golfinho** (mascote do Flipper Zero) interagem em diferentes situações.
 
-## Animation Scene
+## 🎭 Tipos de Animação Implementados
 
-The animation shows **Chameleon** and **Dolphin** (Flipper mascot) meeting at a bar called "CHAMELEON BAR".
+### 1. **Bar Scene** (ChameleonAnimationBar) - Padrão
+A animação original que mostra **Chameleon** e **Dolphin** se encontrando no "CHAMELEON BAR".
 
 ### Characters
 

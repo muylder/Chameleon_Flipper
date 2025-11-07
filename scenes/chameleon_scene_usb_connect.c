@@ -23,7 +23,8 @@ void chameleon_scene_usb_connect_on_enter(void* context) {
     if(chameleon_app_connect_usb(app)) {
         app->connection_status = ChameleonStatusConnected;
 
-        // Show the fun animation of chameleon and dolphin at the bar!
+        // Show the handshake animation for successful connection!
+        chameleon_animation_view_set_type(app->animation_view, ChameleonAnimationHandshake);
         chameleon_animation_view_set_callback(
             app->animation_view,
             chameleon_scene_usb_connect_animation_callback,
@@ -32,13 +33,17 @@ void chameleon_scene_usb_connect_on_enter(void* context) {
         view_dispatcher_switch_to_view(app->view_dispatcher, ChameleonViewAnimation);
         chameleon_animation_view_start(app->animation_view);
     } else {
-        popup_set_header(app->popup, "Error", 64, 10, AlignCenter, AlignTop);
-        popup_set_text(app->popup, "Failed to connect\nvia USB", 64, 32, AlignCenter, AlignCenter);
         app->connection_status = ChameleonStatusError;
 
-        // Show error for 2 seconds then return to main menu
-        furi_delay_ms(2000);
-        scene_manager_search_and_switch_to_previous_scene(app->scene_manager, ChameleonSceneMainMenu);
+        // Show error animation
+        chameleon_animation_view_set_type(app->animation_view, ChameleonAnimationError);
+        chameleon_animation_view_set_callback(
+            app->animation_view,
+            chameleon_scene_usb_connect_animation_callback,
+            app);
+
+        view_dispatcher_switch_to_view(app->view_dispatcher, ChameleonViewAnimation);
+        chameleon_animation_view_start(app->animation_view);
     }
 }
 

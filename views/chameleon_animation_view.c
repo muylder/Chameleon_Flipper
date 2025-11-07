@@ -16,11 +16,13 @@ struct ChameleonAnimationView {
     FuriTimer* timer;
     ChameleonAnimationViewCallback callback;
     void* callback_context;
+    ChameleonAnimationType animation_type;
 };
 
 typedef struct {
     uint8_t frame;
     bool running;
+    ChameleonAnimationType type;
 } ChameleonAnimationViewModel;
 
 // Draw dolphin (Flipper mascot)
@@ -152,7 +154,177 @@ static void draw_bar(Canvas* canvas, uint8_t frame) {
     }
 }
 
-// Draw speech bubbles
+// Draw handshake animation
+static void draw_handshake_scene(Canvas* canvas, uint8_t frame) {
+    // Ground line
+    canvas_draw_line(canvas, 0, 50, 128, 50);
+    
+    // Golfinho (left side)
+    draw_dolphin(canvas, 20, 30, frame);
+    
+    // Camaleão (right side) 
+    draw_chameleon(canvas, 80, 30, frame);
+    
+    // Handshake in the middle
+    if(frame > 10 && frame < 25) {
+        canvas_draw_line(canvas, 35, 40, 75, 40);
+        canvas_draw_circle(canvas, 55, 40, 3);
+        canvas_draw_str_aligned(canvas, 64, 25, AlignCenter, AlignTop, "Conectando...");
+    }
+    
+    if(frame >= 25) {
+        canvas_draw_str_aligned(canvas, 64, 25, AlignCenter, AlignTop, "Conectado!");
+        // Hearts
+        canvas_draw_str(canvas, 45, 20, "<3");
+        canvas_draw_str(canvas, 75, 20, "<3");
+    }
+}
+
+// Draw workshop scene (working together)
+static void draw_workshop_scene(Canvas* canvas, uint8_t frame) {
+    // Workshop table
+    canvas_draw_box(canvas, 20, 35, 88, 5);
+    canvas_draw_line(canvas, 20, 40, 20, 55);
+    canvas_draw_line(canvas, 108, 40, 108, 55);
+    
+    // Tools on table
+    canvas_draw_line(canvas, 30, 30, 35, 35); // Screwdriver
+    canvas_draw_box(canvas, 40, 32, 8, 3); // Wrench
+    canvas_draw_circle(canvas, 90, 32, 3); // Chip/component
+    
+    // Golfinho working (left)
+    draw_dolphin(canvas, 15, 20, frame);
+    
+    // Camaleão working (right)
+    draw_chameleon(canvas, 75, 20, frame);
+    
+    // Sparks/work effect
+    if(frame % 4 < 2) {
+        canvas_draw_dot(canvas, 50 + (frame % 3), 30);
+        canvas_draw_dot(canvas, 70 - (frame % 3), 30);
+    }
+    
+    canvas_draw_str_aligned(canvas, 64, 10, AlignCenter, AlignTop, "Trabalhando juntos!");
+}
+
+// Draw dance celebration
+static void draw_dance_scene(Canvas* canvas, uint8_t frame) {
+    // Dance floor
+    canvas_draw_box(canvas, 10, 45, 108, 19);
+    
+    // Music notes
+    if(frame % 2 == 0) {
+        canvas_draw_str(canvas, 20, 15, "♪");
+        canvas_draw_str(canvas, 90, 15, "♫");
+        canvas_draw_str(canvas, 55, 10, "♪");
+    } else {
+        canvas_draw_str(canvas, 25, 12, "♫");
+        canvas_draw_str(canvas, 85, 18, "♪");
+        canvas_draw_str(canvas, 60, 15, "♫");
+    }
+    
+    // Dancing positions (alternating)
+    int dolphin_y = 35 + (frame % 4 < 2 ? -2 : 2);
+    int chameleon_y = 35 + (frame % 4 >= 2 ? -2 : 2);
+    
+    draw_dolphin(canvas, 30, dolphin_y, frame);
+    draw_chameleon(canvas, 70, chameleon_y, frame);
+    
+    canvas_draw_str_aligned(canvas, 64, 25, AlignCenter, AlignTop, "Sucesso!");
+}
+
+// Draw error scene
+static void draw_error_scene(Canvas* canvas, uint8_t frame) {
+    // Sad expressions
+    draw_dolphin(canvas, 30, 35, 0); // Static sad dolphin
+    draw_chameleon(canvas, 70, 35, 0); // Static sad chameleon
+    
+    // X marks over connection
+    canvas_draw_line(canvas, 50, 30, 70, 50);
+    canvas_draw_line(canvas, 70, 30, 50, 50);
+    
+    // Error message
+    canvas_draw_str_aligned(canvas, 64, 20, AlignCenter, AlignTop, "Falha na Conexao");
+    
+    // Sad effects
+    if(frame % 8 < 4) {
+        canvas_draw_str(canvas, 35, 25, ":(");
+        canvas_draw_str(canvas, 85, 25, ":(");
+    }
+}
+
+// Draw scanning animation
+static void draw_scan_scene(Canvas* canvas, uint8_t frame) {
+    // Golfinho scanning
+    draw_dolphin(canvas, 20, 35, frame);
+    
+    // Radar/scan effect
+    int scan_radius = (frame % 16) * 4;
+    if(scan_radius > 0) {
+        canvas_draw_circle(canvas, 25, 40, scan_radius);
+        if(scan_radius > 8) {
+            canvas_draw_circle(canvas, 25, 40, scan_radius - 8);
+        }
+    }
+    
+    // Found chameleon appears gradually
+    if(frame > 20) {
+        draw_chameleon(canvas, 80, 35, frame);
+        canvas_draw_str_aligned(canvas, 95, 25, AlignCenter, AlignTop, "Encontrado!");
+    }
+    
+    canvas_draw_str_aligned(canvas, 64, 15, AlignCenter, AlignTop, "Procurando...");
+}
+
+// Draw data transfer animation
+static void draw_transfer_scene(Canvas* canvas, uint8_t frame) {
+    draw_dolphin(canvas, 15, 35, frame);
+    draw_chameleon(canvas, 85, 35, frame);
+    
+    // Data packets moving between them
+    int packet_pos = 30 + (frame % 20) * 3;
+    if(packet_pos < 85) {
+        canvas_draw_box(canvas, packet_pos, 42, 4, 2);
+        canvas_draw_box(canvas, packet_pos - 10, 44, 3, 2);
+        canvas_draw_box(canvas, packet_pos - 20, 40, 2, 2);
+    }
+    
+    // Progress bar
+    int progress = (frame * 128) / 32;
+    if(progress > 128) progress = 128;
+    canvas_draw_frame(canvas, 10, 55, 108, 6);
+    canvas_draw_box(canvas, 11, 56, progress * 106 / 128, 4);
+    
+    canvas_draw_str_aligned(canvas, 64, 25, AlignCenter, AlignTop, "Transferindo...");
+}
+
+// Draw goodbye scene
+static void draw_disconnect_scene(Canvas* canvas, uint8_t frame) {
+    // Waving goodbye
+    draw_dolphin(canvas, 20, 35, frame);
+    draw_chameleon(canvas, 80, 35, frame);
+    
+    // Wave lines
+    if(frame % 4 < 2) {
+        canvas_draw_line(canvas, 10, 35, 15, 30);
+        canvas_draw_line(canvas, 90, 35, 95, 30);
+    }
+    
+    // Moving apart
+    int separation = frame * 2;
+    if(separation > 20) separation = 20;
+    
+    canvas_draw_str_aligned(canvas, 64, 20, AlignCenter, AlignTop, "Ate logo!");
+    
+    // Fade effect with dots
+    if(frame > 15) {
+        for(int i = 0; i < (frame - 15); i++) {
+            canvas_draw_dot(canvas, 40 + i * 8, 50);
+        }
+    }
+}
+
+// Draw speech bubbles for bar scene
 static void draw_speech(Canvas* canvas, uint8_t frame) {
     if(frame < 8) {
         // Golfinho fala primeiro
@@ -182,22 +354,56 @@ static void chameleon_animation_view_draw_callback(Canvas* canvas, void* model) 
 
     canvas_clear(canvas);
 
-    // Desenha o bar
-    draw_bar(canvas, m->frame);
+    switch(m->type) {
+        case ChameleonAnimationBar:
+            // Desenha o bar
+            draw_bar(canvas, m->frame);
+            // Desenha os personagens sentados nos bancos
+            draw_dolphin(canvas, 15, 38, m->frame);
+            draw_chameleon(canvas, 70, 38, m->frame);
+            // Balões de fala
+            draw_speech(canvas, m->frame);
+            // Mensagem de conexão
+            if(m->frame > 20) {
+                canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignBottom, "Conectado!");
+            }
+            break;
 
-    // Desenha os personagens sentados nos bancos
-    // Golfinho à esquerda
-    draw_dolphin(canvas, 15, 38, m->frame);
+        case ChameleonAnimationHandshake:
+            draw_handshake_scene(canvas, m->frame);
+            break;
 
-    // Camaleão à direita
-    draw_chameleon(canvas, 70, 38, m->frame);
+        case ChameleonAnimationWorkshop:
+            draw_workshop_scene(canvas, m->frame);
+            break;
 
-    // Balões de fala
-    draw_speech(canvas, m->frame);
+        case ChameleonAnimationDance:
+            draw_dance_scene(canvas, m->frame);
+            break;
 
-    // Mensagem de conexão
-    if(m->frame > 20) {
-        canvas_draw_str_aligned(canvas, 64, 58, AlignCenter, AlignBottom, "Conectado!");
+        case ChameleonAnimationError:
+            draw_error_scene(canvas, m->frame);
+            break;
+
+        case ChameleonAnimationScan:
+            draw_scan_scene(canvas, m->frame);
+            break;
+
+        case ChameleonAnimationTransfer:
+            draw_transfer_scene(canvas, m->frame);
+            break;
+
+        case ChameleonAnimationDisconnect:
+            draw_disconnect_scene(canvas, m->frame);
+            break;
+
+        case ChameleonAnimationSuccess:
+            draw_dance_scene(canvas, m->frame); // Reuse dance for success
+            break;
+
+        default:
+            draw_handshake_scene(canvas, m->frame);
+            break;
     }
 }
 
@@ -248,12 +454,15 @@ ChameleonAnimationView* chameleon_animation_view_alloc() {
     animation_view->timer = furi_timer_alloc(
         chameleon_animation_view_timer_callback, FuriTimerTypePeriodic, animation_view);
 
+    animation_view->animation_type = ChameleonAnimationBar; // Default
+
     with_view_model(
         animation_view->view,
         ChameleonAnimationViewModel * model,
         {
             model->frame = 0;
             model->running = false;
+            model->type = ChameleonAnimationBar;
         },
         false);
 
@@ -282,6 +491,19 @@ void chameleon_animation_view_set_callback(
     animation_view->callback_context = context;
 }
 
+void chameleon_animation_view_set_type(
+    ChameleonAnimationView* animation_view,
+    ChameleonAnimationType type) {
+    furi_assert(animation_view);
+    animation_view->animation_type = type;
+
+    with_view_model(
+        animation_view->view,
+        ChameleonAnimationViewModel * model,
+        { model->type = type; },
+        false);
+}
+
 void chameleon_animation_view_start(ChameleonAnimationView* animation_view) {
     furi_assert(animation_view);
 
@@ -291,6 +513,7 @@ void chameleon_animation_view_start(ChameleonAnimationView* animation_view) {
         {
             model->frame = 0;
             model->running = true;
+            model->type = animation_view->animation_type;
         },
         true);
 

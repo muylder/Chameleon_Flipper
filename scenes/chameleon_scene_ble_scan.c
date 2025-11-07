@@ -1,50 +1,60 @@
 #include "../chameleon_app_i.h"
 
+typedef enum {
+    BleScanEventAnimationDone = 0,
+} BleScanEvent;
+
+static void chameleon_scene_ble_scan_animation_callback(void* context) {
+    ChameleonApp* app = context;
+    view_dispatcher_send_custom_event(app->view_dispatcher, BleScanEventAnimationDone);
+}
+
 void chameleon_scene_ble_scan_on_enter(void* context) {
     ChameleonApp* app = context;
 
-    popup_reset(app->popup);
-    popup_set_header(app->popup, "Scanning...", 64, 10, AlignCenter, AlignTop);
-    popup_set_text(app->popup, "Looking for\nChameleon devices", 64, 32, AlignCenter, AlignCenter);
-    view_dispatcher_switch_to_view(app->view_dispatcher, ChameleonViewPopup);
+    // Show scanning animation
+    chameleon_animation_view_set_type(app->animation_view, ChameleonAnimationScan);
+    chameleon_animation_view_set_callback(
+        app->animation_view,
+        chameleon_scene_ble_scan_animation_callback,
+        app);
 
-    // Initialize BLE and start scan
-    if(chameleon_app_connect_ble(app)) {
-        // Scan started successfully, wait for results
-        furi_delay_ms(3000);
+    view_dispatcher_switch_to_view(app->view_dispatcher, ChameleonViewAnimation);
+    chameleon_animation_view_start(app->animation_view);
 
-        // Check if any devices were found
-        size_t device_count = ble_handler_get_device_count(app->ble_handler);
-
-        if(device_count > 0) {
-            popup_set_header(app->popup, "Found Devices", 64, 10, AlignCenter, AlignTop);
-            snprintf(app->text_buffer, sizeof(app->text_buffer), "Found %zu device(s)", device_count);
-            popup_set_text(app->popup, app->text_buffer, 64, 32, AlignCenter, AlignCenter);
-            furi_delay_ms(1500);
-
-            // Navigate to device selection
-            scene_manager_next_scene(app->scene_manager, ChameleonSceneBleConnect);
-        } else {
-            popup_set_header(app->popup, "No Devices", 64, 10, AlignCenter, AlignTop);
-            popup_set_text(app->popup, "No Chameleon\ndevices found", 64, 32, AlignCenter, AlignCenter);
-            furi_delay_ms(2000);
-            scene_manager_search_and_switch_to_previous_scene(app->scene_manager, ChameleonSceneMainMenu);
-        }
-    } else {
-        popup_set_header(app->popup, "Error", 64, 10, AlignCenter, AlignTop);
-        popup_set_text(app->popup, "BLE initialization\nfailed", 64, 32, AlignCenter, AlignCenter);
-        furi_delay_ms(2000);
-        scene_manager_search_and_switch_to_previous_scene(app->scene_manager, ChameleonSceneMainMenu);
-    }
+    // Initialize BLE and start scan in background
+    chameleon_app_connect_ble(app);
 }
 
 bool chameleon_scene_ble_scan_on_event(void* context, SceneManagerEvent event) {
-    UNUSED(context);
-    UNUSED(event);
-    return false;
+    ChameleonApp* app = context;
+    bool consumed = false;
+
+    if(event.type == SceneManagerEventTypeCustom) {
+        if(event.event == BleScanEventAnimationDone) {
+            // Animation finished, check scan results
+            size_t device_count = ble_handler_get_device_count(app->ble_handler);
+
+            if(device_count > 0) {
+                // Found devices, go to connection scene
+                scene_manager_next_scene(app->scene_manager, ChameleonSceneBleConnect);
+            } else {
+                // No devices found, show error animation then return
+                chameleon_animation_view_set_type(app->animation_view, ChameleonAnimationError);
+                chameleon_animation_view_start(app->animation_view);
+                
+                // After error animation, return to main menu
+                furi_delay_ms(2000);
+                scene_manager_search_and_switch_to_previous_scene(app->scene_manager, ChameleonSceneMainMenu);
+            }
+            consumed = true;
+        }
+    }
+
+    return consumed;
 }
 
 void chameleon_scene_ble_scan_on_exit(void* context) {
     ChameleonApp* app = context;
-    popup_reset(app->popup);
+    chameleon_animation_view_stop(app->animation_view);
 }

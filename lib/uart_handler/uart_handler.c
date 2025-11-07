@@ -26,7 +26,10 @@ static int32_t uart_handler_rx_thread(void* context) {
 
     while(handler->running) {
         // Read from USB CDC
-        size_t received = furi_hal_cdc_receive(0, buffer, sizeof(buffer));
+        size_t received = 0;
+        if(furi_hal_cdc_connected()) {
+            received = furi_hal_cdc_receive(buffer, sizeof(buffer));
+        }
 
         if(received > 0) {
             FURI_LOG_D(TAG, "Received %zu bytes", received);
@@ -121,7 +124,9 @@ bool uart_handler_send(UartHandler* handler, const uint8_t* data, size_t length)
     FURI_LOG_D(TAG, "Sending %zu bytes", length);
 
     // Send via USB CDC
-    furi_hal_cdc_send(0, data, length);
+    if(furi_hal_cdc_connected()) {
+        furi_hal_cdc_send(data, length);
+    }
 
     return true;
 }
