@@ -1,4 +1,6 @@
 #include "chameleon_app_i.h"
+#include <stdlib.h>
+#include <string.h>
 
 #define TAG "ChameleonApp"
 

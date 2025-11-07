@@ -1,6 +1,8 @@
 #include "chameleon_protocol.h"
 #include <furi.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #define TAG "ChameleonProtocol"
 

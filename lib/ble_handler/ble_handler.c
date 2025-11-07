@@ -1,6 +1,11 @@
 #include "ble_handler.h"
 #include <furi.h>
+#include <furi_hal.h>
+#include <furi_hal_bt.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define TAG "BleHandler"
 #define MAX_DEVICES 10

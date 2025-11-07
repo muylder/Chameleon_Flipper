@@ -1,7 +1,11 @@
 #include "uart_handler.h"
 #include <furi.h>
+#include <furi_hal.h>
 #include <furi_hal_usb_cdc.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdbool.h>
 
 #define TAG "UartHandler"
 

@@ -1,6 +1,12 @@
 #include "chameleon_animation_view.h"
 #include <furi.h>
+#include <furi_hal.h>
+#include <gui/gui.h>
+#include <gui/view.h>
 #include <gui/elements.h>
+#include <input/input.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define ANIMATION_FPS 8
 #define ANIMATION_DURATION_MS 3000
