@@ -6,6 +6,7 @@ typedef enum {
     SubmenuIndexReadTag,
     SubmenuIndexWriteTag,
     SubmenuIndexTagViewer,
+    SubmenuIndexTagValidation,
     SubmenuIndexDiagnostic,
     SubmenuIndexKeys,
     SubmenuIndexMifareKeys,
@@ -59,6 +60,13 @@ void chameleon_scene_main_menu_on_enter(void* context) {
         submenu,
         "Tag Data Viewer",
         SubmenuIndexTagViewer,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Tag Validation",
+        SubmenuIndexTagValidation,
         chameleon_scene_main_menu_submenu_callback,
         app);
 
@@ -170,6 +178,10 @@ bool chameleon_scene_main_menu_on_event(void* context, SceneManagerEvent event) 
             break;
         case SubmenuIndexTagViewer:
             scene_manager_next_scene(app->scene_manager, ChameleonSceneTagViewer);
+            consumed = true;
+            break;
+        case SubmenuIndexTagValidation:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneTagValidation);
             consumed = true;
             break;
         case SubmenuIndexDiagnostic:
