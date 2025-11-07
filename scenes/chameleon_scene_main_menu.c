@@ -9,6 +9,9 @@ typedef enum {
     SubmenuIndexTagValidation,
     SubmenuIndexCloneWizard,
     SubmenuIndexUidGenerator,
+    SubmenuIndexTagCollection,
+    SubmenuIndexQuickActions,
+    SubmenuIndexAccessBits,
     SubmenuIndexDiagnostic,
     SubmenuIndexNfcBridge,
     SubmenuIndexKeys,
@@ -84,6 +87,27 @@ void chameleon_scene_main_menu_on_enter(void* context) {
         submenu,
         "UID Generator",
         SubmenuIndexUidGenerator,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Tag Collection",
+        SubmenuIndexTagCollection,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Quick Actions",
+        SubmenuIndexQuickActions,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Access Bits Calc",
+        SubmenuIndexAccessBits,
         chameleon_scene_main_menu_submenu_callback,
         app);
 
@@ -214,6 +238,18 @@ bool chameleon_scene_main_menu_on_event(void* context, SceneManagerEvent event) 
             break;
         case SubmenuIndexUidGenerator:
             scene_manager_next_scene(app->scene_manager, ChameleonSceneUidGenerator);
+            consumed = true;
+            break;
+        case SubmenuIndexTagCollection:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneTagCollection);
+            consumed = true;
+            break;
+        case SubmenuIndexQuickActions:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneQuickActions);
+            consumed = true;
+            break;
+        case SubmenuIndexAccessBits:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneAccessBits);
             consumed = true;
             break;
         case SubmenuIndexDiagnostic:
