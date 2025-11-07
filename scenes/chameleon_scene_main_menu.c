@@ -7,6 +7,7 @@ typedef enum {
     SubmenuIndexWriteTag,
     SubmenuIndexDiagnostic,
     SubmenuIndexKeys,
+    SubmenuIndexBatch,
     SubmenuIndexLogs,
     SubmenuIndexAbout,
 } SubmenuIndex;
@@ -61,6 +62,13 @@ void chameleon_scene_main_menu_on_enter(void* context) {
         submenu,
         "Mifare Keys",
         SubmenuIndexKeys,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Batch Operations",
+        SubmenuIndexBatch,
         chameleon_scene_main_menu_submenu_callback,
         app);
 
@@ -142,6 +150,10 @@ bool chameleon_scene_main_menu_on_event(void* context, SceneManagerEvent event) 
             break;
         case SubmenuIndexKeys:
             scene_manager_next_scene(app->scene_manager, ChameleonSceneKeys);
+            consumed = true;
+            break;
+        case SubmenuIndexBatch:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneBatch);
             consumed = true;
             break;
         case SubmenuIndexLogs:
