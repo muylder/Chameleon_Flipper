@@ -177,6 +177,7 @@ bool chameleon_app_connect_usb(ChameleonApp* app) {
     if(!uart_handler_init(app->uart_handler)) {
         FURI_LOG_E(TAG, "Failed to initialize UART");
         CHAM_LOG_E(app->logger, "USB", "Failed to initialize UART handler");
+        sound_effects_error();  // Play error sound
         return false;
     }
 
@@ -190,6 +191,7 @@ bool chameleon_app_connect_usb(ChameleonApp* app) {
 
     FURI_LOG_I(TAG, "Connected via USB");
     CHAM_LOG_I(app->logger, "USB", "Successfully connected via USB");
+    sound_effects_success();  // Play success sound
     return true;
 }
 
@@ -530,6 +532,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
 
     FURI_LOG_I(TAG, "Scanning for HF14A tags");
     CHAM_LOG_I(app->logger, "TagRead", "Starting HF14A scan");
+    sound_effects_scan();  // Play scan sound
 
     // Build HF14A_SCAN command
     uint8_t cmd_buffer[CHAMELEON_FRAME_OVERHEAD];
@@ -593,6 +596,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
 
     FURI_LOG_I(TAG, "HF14A tag found: UID len=%u", *uid_len);
     CHAM_LOG_I(app->logger, "TagRead", "HF14A tag found (UID length=%u)", *uid_len);
+    sound_effects_success();  // Play success sound
     return true;
 }
 
