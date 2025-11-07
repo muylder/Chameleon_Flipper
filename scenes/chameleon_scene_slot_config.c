@@ -4,6 +4,7 @@ typedef enum {
     SubmenuIndexActivate,
     SubmenuIndexRename,
     SubmenuIndexChangeType,
+    SubmenuIndexAdvanced,
     SubmenuIndexBack,
 } SubmenuIndex;
 
@@ -39,6 +40,13 @@ void chameleon_scene_slot_config_on_enter(void* context) {
         submenu,
         "Change Tag Type",
         SubmenuIndexChangeType,
+        chameleon_scene_slot_config_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Advanced Config",
+        SubmenuIndexAdvanced,
         chameleon_scene_slot_config_submenu_callback,
         app);
 
@@ -79,6 +87,11 @@ bool chameleon_scene_slot_config_on_event(void* context, SceneManagerEvent event
             view_dispatcher_switch_to_view(app->view_dispatcher, ChameleonViewPopup);
             furi_delay_ms(1500);
             view_dispatcher_switch_to_view(app->view_dispatcher, ChameleonViewSubmenu);
+            consumed = true;
+            break;
+
+        case SubmenuIndexAdvanced:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneSlotAdvanced);
             consumed = true;
             break;
         }
