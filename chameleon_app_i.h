@@ -150,3 +150,14 @@ bool chameleon_app_get_slots_info(ChameleonApp* app);
 bool chameleon_app_set_active_slot(ChameleonApp* app, uint8_t slot);
 bool chameleon_app_set_slot_nickname(ChameleonApp* app, uint8_t slot, const char* nickname);
 bool chameleon_app_change_device_mode(ChameleonApp* app, ChameleonDeviceMode mode);
+
+// Tag operations - Reading
+bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len, uint8_t* atqa, uint8_t* sak);
+bool chameleon_app_mf1_read_block(ChameleonApp* app, uint8_t block, uint8_t key_type, const uint8_t* key, uint8_t* data);
+bool chameleon_app_em410x_scan(ChameleonApp* app, uint8_t* id);
+bool chameleon_app_save_tag_to_file(ChameleonApp* app, const char* filename, const uint8_t* data, size_t data_len);
+
+// Tag operations - Writing
+bool chameleon_app_mf1_write_emu_block(ChameleonApp* app, uint8_t block, const uint8_t* data);
+bool chameleon_app_em410x_set_emu_id(ChameleonApp* app, const uint8_t* id);
+bool chameleon_app_load_tag_from_file(ChameleonApp* app, const char* filepath, uint8_t* data, size_t* data_len, ChameleonTagType* tag_type);
