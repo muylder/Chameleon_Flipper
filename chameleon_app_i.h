@@ -20,6 +20,7 @@
 #include "lib/ble_handler/ble_handler.h"
 #include "lib/response_handler/response_handler.h"
 #include "lib/logger/chameleon_logger.h"
+#include "lib/key_manager/key_manager.h"
 #include "views/chameleon_animation_view.h"
 
 #define TAG "ChameleonUltra"
@@ -137,6 +138,9 @@ typedef struct {
 
     // Logger
     ChameleonLogger* logger;
+
+    // Key manager
+    KeyManager* key_manager;
 } ChameleonApp;
 
 // Application lifecycle

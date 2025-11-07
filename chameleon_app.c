@@ -78,6 +78,11 @@ ChameleonApp* chameleon_app_alloc() {
     app->logger = chameleon_logger_alloc();
     CHAM_LOG_I(app->logger, TAG, "Chameleon Ultra app initialized");
 
+    // Initialize key manager
+    app->key_manager = key_manager_alloc();
+    key_manager_load_defaults(app->key_manager);  // Load default Mifare keys
+    CHAM_LOG_I(app->logger, TAG, "Key manager initialized with %zu keys", key_manager_get_count(app->key_manager));
+
     // Initialize handlers
     app->uart_handler = uart_handler_alloc();
     app->ble_handler = ble_handler_alloc();
@@ -112,6 +117,9 @@ void chameleon_app_free(ChameleonApp* app) {
     // Free protocol and response handler
     chameleon_protocol_free(app->protocol);
     chameleon_response_handler_free(app->response_handler);
+
+    // Free key manager
+    key_manager_free(app->key_manager);
 
     // Free logger
     CHAM_LOG_I(app->logger, TAG, "Chameleon Ultra app shutting down");
