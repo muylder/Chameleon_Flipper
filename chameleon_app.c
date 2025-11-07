@@ -90,6 +90,13 @@ ChameleonApp* chameleon_app_alloc() {
         settings_manager_get(app->settings_manager)->sound_enabled,
         settings_manager_get(app->settings_manager)->haptic_enabled);
 
+    // Initialize statistics manager
+    app->statistics_manager = statistics_manager_alloc();
+    statistics_manager_load(app->statistics_manager);  // Load saved statistics
+    statistics_manager_start_session(app->statistics_manager);  // Start new session
+    CHAM_LOG_I(app->logger, TAG, "Statistics loaded (sessions:%lu)",
+        statistics_manager_get_data(app->statistics_manager)->total_sessions);
+
     // Initialize handlers
     app->uart_handler = uart_handler_alloc();
     app->ble_handler = ble_handler_alloc();
@@ -131,6 +138,11 @@ void chameleon_app_free(ChameleonApp* app) {
     // Save and free settings
     settings_manager_save(app->settings_manager);
     settings_manager_free(app->settings_manager);
+
+    // End session and save statistics
+    statistics_manager_end_session(app->statistics_manager);
+    statistics_manager_save(app->statistics_manager);
+    statistics_manager_free(app->statistics_manager);
 
     // Free logger
     CHAM_LOG_I(app->logger, TAG, "Chameleon Ultra app shutting down");
