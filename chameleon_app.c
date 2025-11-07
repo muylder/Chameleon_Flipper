@@ -83,6 +83,13 @@ ChameleonApp* chameleon_app_alloc() {
     key_manager_load_defaults(app->key_manager);  // Load default Mifare keys
     CHAM_LOG_I(app->logger, TAG, "Key manager initialized with %zu keys", key_manager_get_count(app->key_manager));
 
+    // Initialize settings manager
+    app->settings_manager = settings_manager_alloc();
+    settings_manager_load(app->settings_manager);  // Load saved settings
+    CHAM_LOG_I(app->logger, TAG, "Settings loaded (sound:%d haptic:%d)",
+        settings_manager_get(app->settings_manager)->sound_enabled,
+        settings_manager_get(app->settings_manager)->haptic_enabled);
+
     // Initialize handlers
     app->uart_handler = uart_handler_alloc();
     app->ble_handler = ble_handler_alloc();
@@ -120,6 +127,10 @@ void chameleon_app_free(ChameleonApp* app) {
 
     // Free key manager
     key_manager_free(app->key_manager);
+
+    // Save and free settings
+    settings_manager_save(app->settings_manager);
+    settings_manager_free(app->settings_manager);
 
     // Free logger
     CHAM_LOG_I(app->logger, TAG, "Chameleon Ultra app shutting down");

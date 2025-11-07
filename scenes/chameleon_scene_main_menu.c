@@ -9,6 +9,7 @@ typedef enum {
     SubmenuIndexKeys,
     SubmenuIndexBatch,
     SubmenuIndexLogs,
+    SubmenuIndexSettings,
     SubmenuIndexAbout,
 } SubmenuIndex;
 
@@ -76,6 +77,13 @@ void chameleon_scene_main_menu_on_enter(void* context) {
         submenu,
         "View Logs",
         SubmenuIndexLogs,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Settings",
+        SubmenuIndexSettings,
         chameleon_scene_main_menu_submenu_callback,
         app);
 
@@ -158,6 +166,10 @@ bool chameleon_scene_main_menu_on_event(void* context, SceneManagerEvent event) 
             break;
         case SubmenuIndexLogs:
             scene_manager_next_scene(app->scene_manager, ChameleonSceneLogs);
+            consumed = true;
+            break;
+        case SubmenuIndexSettings:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneSettings);
             consumed = true;
             break;
         case SubmenuIndexAbout:

@@ -22,6 +22,7 @@
 #include "lib/logger/chameleon_logger.h"
 #include "lib/key_manager/key_manager.h"
 #include "lib/sound_effects/sound_effects.h"
+#include "lib/settings/settings_manager.h"
 #include "views/chameleon_animation_view.h"
 
 #define TAG "ChameleonUltra"
@@ -142,6 +143,9 @@ typedef struct {
 
     // Key manager
     KeyManager* key_manager;
+
+    // Settings manager
+    ChameleonSettingsManager* settings_manager;
 } ChameleonApp;
 
 // Application lifecycle
