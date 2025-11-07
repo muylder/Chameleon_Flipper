@@ -74,6 +74,10 @@ ChameleonApp* chameleon_app_alloc() {
     // Initialize response handler
     app->response_handler = chameleon_response_handler_alloc();
 
+    // Initialize logger
+    app->logger = chameleon_logger_alloc();
+    CHAM_LOG_I(app->logger, TAG, "Chameleon Ultra app initialized");
+
     // Initialize handlers
     app->uart_handler = uart_handler_alloc();
     app->ble_handler = ble_handler_alloc();
@@ -108,6 +112,10 @@ void chameleon_app_free(ChameleonApp* app) {
     // Free protocol and response handler
     chameleon_protocol_free(app->protocol);
     chameleon_response_handler_free(app->response_handler);
+
+    // Free logger
+    CHAM_LOG_I(app->logger, TAG, "Chameleon Ultra app shutting down");
+    chameleon_logger_free(app->logger);
 
     // Free views
     view_dispatcher_remove_view(app->view_dispatcher, ChameleonViewSubmenu);
@@ -156,9 +164,11 @@ bool chameleon_app_connect_usb(ChameleonApp* app) {
     furi_assert(app);
 
     FURI_LOG_I(TAG, "Connecting via USB");
+    CHAM_LOG_I(app->logger, "USB", "Initiating USB connection");
 
     if(!uart_handler_init(app->uart_handler)) {
         FURI_LOG_E(TAG, "Failed to initialize UART");
+        CHAM_LOG_E(app->logger, "USB", "Failed to initialize UART handler");
         return false;
     }
 
@@ -171,6 +181,7 @@ bool chameleon_app_connect_usb(ChameleonApp* app) {
     app->connection_status = ChameleonStatusConnected;
 
     FURI_LOG_I(TAG, "Connected via USB");
+    CHAM_LOG_I(app->logger, "USB", "Successfully connected via USB");
     return true;
 }
 
@@ -178,18 +189,22 @@ bool chameleon_app_connect_ble(ChameleonApp* app) {
     furi_assert(app);
 
     FURI_LOG_I(TAG, "Connecting via BLE");
+    CHAM_LOG_I(app->logger, "BLE", "Initiating BLE connection");
 
     if(!ble_handler_init(app->ble_handler)) {
         FURI_LOG_E(TAG, "Failed to initialize BLE");
+        CHAM_LOG_E(app->logger, "BLE", "Failed to initialize BLE handler");
         return false;
     }
 
     if(!ble_handler_start_scan(app->ble_handler)) {
         FURI_LOG_E(TAG, "Failed to start BLE scan");
+        CHAM_LOG_E(app->logger, "BLE", "Failed to start BLE scan");
         return false;
     }
 
     FURI_LOG_I(TAG, "BLE scan started");
+    CHAM_LOG_I(app->logger, "BLE", "BLE scan started successfully");
     return true;
 }
 
@@ -199,8 +214,10 @@ void chameleon_app_disconnect(ChameleonApp* app) {
     FURI_LOG_I(TAG, "Disconnecting");
 
     if(app->connection_type == ChameleonConnectionUSB) {
+        CHAM_LOG_I(app->logger, "USB", "Disconnecting USB");
         uart_handler_deinit(app->uart_handler);
     } else if(app->connection_type == ChameleonConnectionBLE) {
+        CHAM_LOG_I(app->logger, "BLE", "Disconnecting BLE");
         ble_handler_disconnect(app->ble_handler);
         ble_handler_deinit(app->ble_handler);
     }
@@ -209,6 +226,7 @@ void chameleon_app_disconnect(ChameleonApp* app) {
     app->connection_status = ChameleonStatusDisconnected;
 
     FURI_LOG_I(TAG, "Disconnected");
+    CHAM_LOG_I(app->logger, "Connection", "Device disconnected");
 }
 
 bool chameleon_app_get_device_info(ChameleonApp* app) {
@@ -503,6 +521,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
     furi_assert(uid_len);
 
     FURI_LOG_I(TAG, "Scanning for HF14A tags");
+    CHAM_LOG_I(app->logger, "TagRead", "Starting HF14A scan");
 
     // Build HF14A_SCAN command
     uint8_t cmd_buffer[CHAMELEON_FRAME_OVERHEAD];
@@ -510,6 +529,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
 
     if(!chameleon_protocol_build_cmd_no_data(app->protocol, CMD_HF14A_SCAN, cmd_buffer, &cmd_len)) {
         FURI_LOG_E(TAG, "Failed to build HF14A_SCAN command");
+        CHAM_LOG_E(app->logger, "TagRead", "Failed to build HF14A_SCAN command");
         return false;
     }
 
@@ -534,6 +554,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
     // Check response status
     if(response.status != STATUS_HF_TAG_OK) {
         FURI_LOG_E(TAG, "HF14A scan failed: status=%04X", response.status);
+        CHAM_LOG_E(app->logger, "TagRead", "HF14A scan failed with status %04X", response.status);
         return false;
     }
 
@@ -541,6 +562,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
     // Minimum: 4 (UID) + 2 (ATQA) + 1 (SAK) = 7 bytes
     if(response.data_len < 7) {
         FURI_LOG_E(TAG, "Invalid HF14A response length: %u", response.data_len);
+        CHAM_LOG_E(app->logger, "TagRead", "Invalid HF14A response length: %u", response.data_len);
         return false;
     }
 
@@ -562,6 +584,7 @@ bool chameleon_app_hf14a_scan(ChameleonApp* app, uint8_t* uid, uint8_t* uid_len,
     }
 
     FURI_LOG_I(TAG, "HF14A tag found: UID len=%u", *uid_len);
+    CHAM_LOG_I(app->logger, "TagRead", "HF14A tag found (UID length=%u)", *uid_len);
     return true;
 }
 
@@ -628,6 +651,7 @@ bool chameleon_app_em410x_scan(ChameleonApp* app, uint8_t* id) {
     furi_assert(id);
 
     FURI_LOG_I(TAG, "Scanning for EM410X tags");
+    CHAM_LOG_I(app->logger, "TagRead", "Starting EM410X scan");
 
     // Build EM410X_SCAN command
     uint8_t cmd_buffer[CHAMELEON_FRAME_OVERHEAD];
@@ -635,6 +659,7 @@ bool chameleon_app_em410x_scan(ChameleonApp* app, uint8_t* id) {
 
     if(!chameleon_protocol_build_cmd_no_data(app->protocol, CMD_EM410X_SCAN, cmd_buffer, &cmd_len)) {
         FURI_LOG_E(TAG, "Failed to build EM410X_SCAN command");
+        CHAM_LOG_E(app->logger, "TagRead", "Failed to build EM410X_SCAN command");
         return false;
     }
 
@@ -659,18 +684,21 @@ bool chameleon_app_em410x_scan(ChameleonApp* app, uint8_t* id) {
     // Check response status
     if(response.status != STATUS_LF_TAG_OK) {
         FURI_LOG_E(TAG, "EM410X scan failed: status=%04X", response.status);
+        CHAM_LOG_E(app->logger, "TagRead", "EM410X scan failed with status %04X", response.status);
         return false;
     }
 
     // Response should be 5 bytes (EM410X ID)
     if(response.data_len != 5) {
         FURI_LOG_E(TAG, "Invalid EM410X response length: %u", response.data_len);
+        CHAM_LOG_E(app->logger, "TagRead", "Invalid EM410X response length: %u", response.data_len);
         return false;
     }
 
     memcpy(id, response.data, 5);
 
     FURI_LOG_I(TAG, "EM410X tag found");
+    CHAM_LOG_I(app->logger, "TagRead", "EM410X tag found successfully");
     return true;
 }
 
@@ -714,6 +742,7 @@ bool chameleon_app_mf1_write_emu_block(ChameleonApp* app, uint8_t block, const u
     furi_assert(data);
 
     FURI_LOG_I(TAG, "Writing Mifare Classic block %u to emulation", block);
+    CHAM_LOG_I(app->logger, "TagWrite", "Writing Mifare block %u", block);
 
     // Build MF1_WRITE_EMU_BLOCK_DATA command
     // Data format: block (1 byte) + data (16 bytes)
@@ -741,6 +770,7 @@ bool chameleon_app_mf1_write_emu_block(ChameleonApp* app, uint8_t block, const u
 
     if(!sent) {
         FURI_LOG_E(TAG, "Failed to send MF1_WRITE_EMU_BLOCK_DATA");
+        CHAM_LOG_E(app->logger, "TagWrite", "Failed to send MF1 write command");
         return false;
     }
 
@@ -749,16 +779,19 @@ bool chameleon_app_mf1_write_emu_block(ChameleonApp* app, uint8_t block, const u
     if(!chameleon_response_handler_wait_for_response(
            app->response_handler, 0x1004, &response, RESPONSE_TIMEOUT_MS)) {
         FURI_LOG_E(TAG, "Timeout waiting for MF1_WRITE_EMU_BLOCK_DATA response");
+        CHAM_LOG_E(app->logger, "TagWrite", "Timeout waiting for MF1 write response");
         return false;
     }
 
     // Check status (0x0000 = success)
     if(response.status != 0x0000) {
         FURI_LOG_E(TAG, "MF1_WRITE_EMU_BLOCK_DATA failed with status: %04X", response.status);
+        CHAM_LOG_E(app->logger, "TagWrite", "MF1 write failed with status %04X", response.status);
         return false;
     }
 
     FURI_LOG_I(TAG, "Block %u written successfully", block);
+    CHAM_LOG_I(app->logger, "TagWrite", "Mifare block %u written successfully", block);
     return true;
 }
 
@@ -767,6 +800,7 @@ bool chameleon_app_em410x_set_emu_id(ChameleonApp* app, const uint8_t* id) {
     furi_assert(id);
 
     FURI_LOG_I(TAG, "Setting EM410X emulation ID");
+    CHAM_LOG_I(app->logger, "TagWrite", "Setting EM410X emulation ID");
 
     // Build EM410X_SET_EMU_ID command
     // Data: 5 bytes (EM410X ID)
@@ -790,6 +824,7 @@ bool chameleon_app_em410x_set_emu_id(ChameleonApp* app, const uint8_t* id) {
 
     if(!sent) {
         FURI_LOG_E(TAG, "Failed to send EM410X_SET_EMU_ID");
+        CHAM_LOG_E(app->logger, "TagWrite", "Failed to send EM410X set command");
         return false;
     }
 
@@ -798,16 +833,19 @@ bool chameleon_app_em410x_set_emu_id(ChameleonApp* app, const uint8_t* id) {
     if(!chameleon_response_handler_wait_for_response(
            app->response_handler, 0x3002, &response, RESPONSE_TIMEOUT_MS)) {
         FURI_LOG_E(TAG, "Timeout waiting for EM410X_SET_EMU_ID response");
+        CHAM_LOG_E(app->logger, "TagWrite", "Timeout waiting for EM410X set response");
         return false;
     }
 
     // Check status (0x0000 = success)
     if(response.status != 0x0000) {
         FURI_LOG_E(TAG, "EM410X_SET_EMU_ID failed with status: %04X", response.status);
+        CHAM_LOG_E(app->logger, "TagWrite", "EM410X set failed with status %04X", response.status);
         return false;
     }
 
     FURI_LOG_I(TAG, "EM410X ID set successfully");
+    CHAM_LOG_I(app->logger, "TagWrite", "EM410X ID set successfully");
     return true;
 }
 
