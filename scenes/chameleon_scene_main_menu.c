@@ -12,6 +12,7 @@ typedef enum {
     SubmenuIndexTagCollection,
     SubmenuIndexQuickActions,
     SubmenuIndexAccessBits,
+    SubmenuIndexNdefBuilder,
     SubmenuIndexDiagnostic,
     SubmenuIndexNfcBridge,
     SubmenuIndexKeys,
@@ -108,6 +109,13 @@ void chameleon_scene_main_menu_on_enter(void* context) {
         submenu,
         "Access Bits Calc",
         SubmenuIndexAccessBits,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "NDEF Builder",
+        SubmenuIndexNdefBuilder,
         chameleon_scene_main_menu_submenu_callback,
         app);
 
@@ -250,6 +258,10 @@ bool chameleon_scene_main_menu_on_event(void* context, SceneManagerEvent event) 
             break;
         case SubmenuIndexAccessBits:
             scene_manager_next_scene(app->scene_manager, ChameleonSceneAccessBits);
+            consumed = true;
+            break;
+        case SubmenuIndexNdefBuilder:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneNdefBuilder);
             consumed = true;
             break;
         case SubmenuIndexDiagnostic:
