@@ -71,6 +71,9 @@ ChameleonApp* chameleon_app_alloc() {
     // Initialize protocol
     app->protocol = chameleon_protocol_alloc();
 
+    // Initialize response handler
+    app->response_handler = chameleon_response_handler_alloc();
+
     // Initialize handlers
     app->uart_handler = uart_handler_alloc();
     app->ble_handler = ble_handler_alloc();
@@ -102,8 +105,9 @@ void chameleon_app_free(ChameleonApp* app) {
     uart_handler_free(app->uart_handler);
     ble_handler_free(app->ble_handler);
 
-    // Free protocol
+    // Free protocol and response handler
     chameleon_protocol_free(app->protocol);
+    chameleon_response_handler_free(app->response_handler);
 
     // Free views
     view_dispatcher_remove_view(app->view_dispatcher, ChameleonViewSubmenu);
@@ -142,6 +146,12 @@ void chameleon_app_free(ChameleonApp* app) {
     free(app);
 }
 
+// UART RX callback - passa dados recebidos para o response handler
+static void chameleon_app_uart_rx_callback(const uint8_t* data, size_t length, void* context) {
+    ChameleonApp* app = context;
+    chameleon_response_handler_process_data(app->response_handler, data, length);
+}
+
 bool chameleon_app_connect_usb(ChameleonApp* app) {
     furi_assert(app);
 
@@ -151,6 +161,9 @@ bool chameleon_app_connect_usb(ChameleonApp* app) {
         FURI_LOG_E(TAG, "Failed to initialize UART");
         return false;
     }
+
+    // Configure UART to send received data to response handler
+    uart_handler_set_rx_callback(app->uart_handler, chameleon_app_uart_rx_callback, app);
 
     uart_handler_start_rx(app->uart_handler);
 
@@ -222,16 +235,98 @@ bool chameleon_app_get_device_info(ChameleonApp* app) {
         return false;
     }
 
-    // TODO: Wait for response and parse it
-    // For now, set dummy data
-    app->device_info.major_version = 1;
-    app->device_info.minor_version = 0;
-    app->device_info.chip_id = 0x123456789ABCDEF0;
-    app->device_info.model = ChameleonModelUltra;
-    app->device_info.mode = ChameleonModeEmulator;
-    app->device_info.connected = true;
+    // Wait for response
+    ChameleonResponse response;
+    if(!chameleon_response_handler_wait_for_response(
+           app->response_handler, CMD_GET_APP_VERSION, &response, RESPONSE_TIMEOUT_MS)) {
+        FURI_LOG_E(TAG, "Timeout waiting for device info");
+        return false;
+    }
 
-    FURI_LOG_I(TAG, "Device info retrieved");
+    // Check response status
+    if(response.status != STATUS_SUCCESS) {
+        FURI_LOG_E(TAG, "Device info request failed: status=%04X", response.status);
+        return false;
+    }
+
+    // Parse response data (should be 2 bytes: major.minor)
+    if(response.data_len >= 2) {
+        app->device_info.major_version = response.data[0];
+        app->device_info.minor_version = response.data[1];
+        app->device_info.connected = true;
+
+        FURI_LOG_I(
+            TAG,
+            "Device firmware version: %d.%d",
+            app->device_info.major_version,
+            app->device_info.minor_version);
+    }
+
+    // Get chip ID
+    if(!chameleon_protocol_build_cmd_no_data(app->protocol, CMD_GET_DEVICE_CHIP_ID, cmd_buffer, &cmd_len)) {
+        FURI_LOG_E(TAG, "Failed to build GET_DEVICE_CHIP_ID command");
+        return false;
+    }
+
+    if(app->connection_type == ChameleonConnectionUSB) {
+        uart_handler_send(app->uart_handler, cmd_buffer, cmd_len);
+    } else {
+        ble_handler_send(app->ble_handler, cmd_buffer, cmd_len);
+    }
+
+    if(chameleon_response_handler_wait_for_response(
+           app->response_handler, CMD_GET_DEVICE_CHIP_ID, &response, RESPONSE_TIMEOUT_MS)) {
+        if(response.status == STATUS_SUCCESS && response.data_len >= 8) {
+            // Parse 8-byte chip ID (Big Endian)
+            app->device_info.chip_id = 0;
+            for(uint8_t i = 0; i < 8; i++) {
+                app->device_info.chip_id = (app->device_info.chip_id << 8) | response.data[i];
+            }
+            FURI_LOG_I(TAG, "Chip ID: %016llX", app->device_info.chip_id);
+        }
+    }
+
+    // Get device model
+    if(!chameleon_protocol_build_cmd_no_data(app->protocol, CMD_GET_DEVICE_MODEL, cmd_buffer, &cmd_len)) {
+        FURI_LOG_E(TAG, "Failed to build GET_DEVICE_MODEL command");
+        return false;
+    }
+
+    if(app->connection_type == ChameleonConnectionUSB) {
+        uart_handler_send(app->uart_handler, cmd_buffer, cmd_len);
+    } else {
+        ble_handler_send(app->ble_handler, cmd_buffer, cmd_len);
+    }
+
+    if(chameleon_response_handler_wait_for_response(
+           app->response_handler, CMD_GET_DEVICE_MODEL, &response, RESPONSE_TIMEOUT_MS)) {
+        if(response.status == STATUS_SUCCESS && response.data_len >= 1) {
+            app->device_info.model = (ChameleonModel)response.data[0];
+            FURI_LOG_I(TAG, "Device model: %s", app->device_info.model == ChameleonModelUltra ? "Ultra" : "Lite");
+        }
+    }
+
+    // Get device mode
+    if(!chameleon_protocol_build_cmd_no_data(app->protocol, CMD_GET_DEVICE_MODE, cmd_buffer, &cmd_len)) {
+        FURI_LOG_E(TAG, "Failed to build GET_DEVICE_MODE command");
+        return false;
+    }
+
+    if(app->connection_type == ChameleonConnectionUSB) {
+        uart_handler_send(app->uart_handler, cmd_buffer, cmd_len);
+    } else {
+        ble_handler_send(app->ble_handler, cmd_buffer, cmd_len);
+    }
+
+    if(chameleon_response_handler_wait_for_response(
+           app->response_handler, CMD_GET_DEVICE_MODE, &response, RESPONSE_TIMEOUT_MS)) {
+        if(response.status == STATUS_SUCCESS && response.data_len >= 1) {
+            app->device_info.mode = (ChameleonDeviceMode)response.data[0];
+            FURI_LOG_I(TAG, "Device mode: %s", app->device_info.mode == ChameleonModeReader ? "Reader" : "Emulator");
+        }
+    }
+
+    FURI_LOG_I(TAG, "Device info retrieved successfully");
     return true;
 }
 
@@ -240,13 +335,60 @@ bool chameleon_app_get_slots_info(ChameleonApp* app) {
 
     FURI_LOG_I(TAG, "Getting slots info");
 
-    // TODO: Implement GET_SLOT_INFO command
-    // For now, set dummy data
-    for(uint8_t i = 0; i < 8; i++) {
-        snprintf(app->slots[i].nickname, sizeof(app->slots[i].nickname), "Slot %d", i);
+    // Build GET_SLOT_INFO command
+    uint8_t cmd_buffer[CHAMELEON_FRAME_OVERHEAD];
+    size_t cmd_len;
+
+    if(!chameleon_protocol_build_cmd_no_data(app->protocol, CMD_GET_SLOT_INFO, cmd_buffer, &cmd_len)) {
+        FURI_LOG_E(TAG, "Failed to build GET_SLOT_INFO command");
+        return false;
     }
 
-    FURI_LOG_I(TAG, "Slots info retrieved");
+    // Send command
+    if(app->connection_type == ChameleonConnectionUSB) {
+        uart_handler_send(app->uart_handler, cmd_buffer, cmd_len);
+    } else if(app->connection_type == ChameleonConnectionBLE) {
+        ble_handler_send(app->ble_handler, cmd_buffer, cmd_len);
+    } else {
+        FURI_LOG_E(TAG, "Not connected");
+        return false;
+    }
+
+    // Wait for response
+    ChameleonResponse response;
+    if(!chameleon_response_handler_wait_for_response(
+           app->response_handler, CMD_GET_SLOT_INFO, &response, RESPONSE_TIMEOUT_MS)) {
+        FURI_LOG_E(TAG, "Timeout waiting for slots info");
+        return false;
+    }
+
+    // Check response status
+    if(response.status != STATUS_SUCCESS) {
+        FURI_LOG_E(TAG, "Slots info request failed: status=%04X", response.status);
+        return false;
+    }
+
+    // Parse response data (32 bytes: 8 slots x 4 bytes each)
+    // Each slot has: HF type (1 byte) + LF type (1 byte) + 2 reserved bytes
+    if(response.data_len >= 32) {
+        for(uint8_t i = 0; i < 8; i++) {
+            app->slots[i].hf_tag_type = (ChameleonTagType)response.data[i * 4];
+            app->slots[i].lf_tag_type = (ChameleonTagType)response.data[i * 4 + 1];
+
+            FURI_LOG_D(TAG, "Slot %d: HF=%d, LF=%d", i, app->slots[i].hf_tag_type, app->slots[i].lf_tag_type);
+        }
+    }
+
+    // Get nicknames for each slot
+    for(uint8_t i = 0; i < 8; i++) {
+        // TODO: Implementar GET_SLOT_TAG_NICK quando disponível
+        // Por agora, manter nicknames existentes ou usar default
+        if(strlen(app->slots[i].nickname) == 0) {
+            snprintf(app->slots[i].nickname, sizeof(app->slots[i].nickname), "Slot %d", i);
+        }
+    }
+
+    FURI_LOG_I(TAG, "Slots info retrieved successfully");
     return true;
 }
 

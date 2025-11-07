@@ -18,6 +18,7 @@
 #include "lib/chameleon_protocol/chameleon_protocol.h"
 #include "lib/uart_handler/uart_handler.h"
 #include "lib/ble_handler/ble_handler.h"
+#include "lib/response_handler/response_handler.h"
 #include "views/chameleon_animation_view.h"
 
 #define TAG "ChameleonUltra"
@@ -129,6 +130,9 @@ typedef struct {
 
     // Protocol handler
     ChameleonProtocol* protocol;
+
+    // Response handler
+    ChameleonResponseHandler* response_handler;
 } ChameleonApp;
 
 // Application lifecycle
