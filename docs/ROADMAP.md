@@ -41,28 +41,37 @@ chameleon_app.c
 
 ---
 
-### 2. **BLE GATT Implementation** ⭐⭐⭐ ALTA
-**Status:** 4 TODOs em `ble_handler.c`
+### 2. **BLE GATT Implementation** ⚠️ BLOCKED - LIMITAÇÃO DA API
+**Status:** Documentado e preparado para implementação futura
 
-**O que fazer:**
-- Implementar BLE GAP scanning real
-- GATT service discovery
-- Characteristic read/write
-- Connection handling adequado
+**Situação Atual:**
+- ✅ UUIDs do Nordic UART Service identificados
+- ✅ Estrutura do BLE handler completa
+- ✅ Documentação criada em `docs/BLE_LIMITATIONS.md`
+- ⚠️ **Flipper Zero API não suporta BLE Central mode**
 
-**Arquivos afetados:**
+**Limitação:**
+O Flipper Zero só funciona como BLE Peripheral (anunciando serviços).
+A API pública (`furi_hal_bt`) NÃO permite:
+- Scanning de dispositivos BLE externos
+- Conexão a dispositivos BLE como cliente
+- Modo BLE Central em geral
+
+**Solução Atual:**
+✅ **USB connection está 100% funcional** - Use USB!
+
+**Arquivos preparados:**
 ```
-lib/ble_handler/ble_handler.c
-lib/ble_handler/ble_handler.h
+lib/ble_handler/ble_handler.c  (stub com UUIDs corretos)
+lib/ble_handler/ble_handler.h  (interface completa)
+docs/BLE_LIMITATIONS.md         (documentação técnica)
 ```
 
-**Desafios:**
-- Requer conhecimento dos UUIDs específicos do Chameleon Ultra
-- Complexidade do stack BLE do Flipper
+**Próximos Passos:**
+- Aguardar API BLE Central no Flipper firmware
+- Ou usar API de baixo nível (não suportada oficialmente)
 
-**Benefício:** Conexão Bluetooth funcional
-
-**Estimativa:** 8-12 horas
+**Estimativa:** Não aplicável (limitação externa)
 
 ---
 

@@ -11,6 +11,23 @@
 #define MAX_DEVICES 10
 #define DEVICE_NAME_MAX_LEN 32
 
+// ============================================================================
+// Nordic UART Service (NUS) UUIDs - Used by Chameleon Ultra
+// ============================================================================
+// Service UUID:        6E400001-B5A3-F393-E0A9-E50E24DCCA9E
+// RX Characteristic:   6E400002-B5A3-F393-E0A9-E50E24DCCA9E (Write to device)
+// TX Characteristic:   6E400003-B5A3-F393-E0A9-E50E24DCCA9E (Notifications from device)
+//
+// IMPORTANT: This implementation is currently a STUB.
+// Flipper Zero's public API does not support BLE Central mode (scanning/connecting).
+// See docs/BLE_LIMITATIONS.md for details.
+// For now, USE USB CONNECTION which is fully functional.
+// ============================================================================
+
+#define NUS_SERVICE_UUID "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+#define NUS_RX_CHAR_UUID "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+#define NUS_TX_CHAR_UUID "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+
 typedef struct {
     char name[DEVICE_NAME_MAX_LEN];
     uint8_t mac[6];
@@ -57,16 +74,25 @@ bool ble_handler_init(BleHandler* handler) {
         return true;
     }
 
-    FURI_LOG_I(TAG, "Initializing BLE");
+    FURI_LOG_I(TAG, "Initializing BLE (STUB MODE - See docs/BLE_LIMITATIONS.md)");
 
-    // Note: BLE initialization on Flipper Zero is complex and requires
-    // proper GAP/GATT setup. This is a simplified version.
-    // For production, you'd need to use the full BLE stack.
+    // STUB IMPLEMENTATION
+    // Flipper Zero's public API (furi_hal_bt) only supports BLE Peripheral mode.
+    // BLE Central mode (scanning/connecting to external devices) is not available.
+    // This is a framework ready for when BLE Central API becomes available.
+    //
+    // Required for full implementation:
+    // 1. BLE GAP scanning for devices advertising NUS service
+    // 2. GATT service discovery to find characteristics
+    // 3. Subscribe to TX characteristic (6E400003...) for notifications
+    // 4. Write to RX characteristic (6E400002...) to send commands
+    //
+    // For now, this returns success but all operations are simulated.
 
     handler->initialized = true;
     handler->status = BleStatusDisconnected;
 
-    FURI_LOG_I(TAG, "BLE initialized");
+    FURI_LOG_W(TAG, "BLE initialized in STUB mode - USB connection recommended");
     return true;
 }
 
