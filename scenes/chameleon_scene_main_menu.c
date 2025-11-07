@@ -13,6 +13,9 @@ typedef enum {
     SubmenuIndexQuickActions,
     SubmenuIndexAccessBits,
     SubmenuIndexNdefBuilder,
+    SubmenuIndexDictionaryAttack,
+    SubmenuIndexPerformance,
+    SubmenuIndexEmulationRecorder,
     SubmenuIndexDiagnostic,
     SubmenuIndexNfcBridge,
     SubmenuIndexKeys,
@@ -116,6 +119,27 @@ void chameleon_scene_main_menu_on_enter(void* context) {
         submenu,
         "NDEF Builder",
         SubmenuIndexNdefBuilder,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Dictionary Attack",
+        SubmenuIndexDictionaryAttack,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Performance Monitor",
+        SubmenuIndexPerformance,
+        chameleon_scene_main_menu_submenu_callback,
+        app);
+
+    submenu_add_item(
+        submenu,
+        "Emulation Recorder",
+        SubmenuIndexEmulationRecorder,
         chameleon_scene_main_menu_submenu_callback,
         app);
 
@@ -262,6 +286,18 @@ bool chameleon_scene_main_menu_on_event(void* context, SceneManagerEvent event) 
             break;
         case SubmenuIndexNdefBuilder:
             scene_manager_next_scene(app->scene_manager, ChameleonSceneNdefBuilder);
+            consumed = true;
+            break;
+        case SubmenuIndexDictionaryAttack:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneDictionaryAttack);
+            consumed = true;
+            break;
+        case SubmenuIndexPerformance:
+            scene_manager_next_scene(app->scene_manager, ChameleonScenePerformance);
+            consumed = true;
+            break;
+        case SubmenuIndexEmulationRecorder:
+            scene_manager_next_scene(app->scene_manager, ChameleonSceneEmulationRecorder);
             consumed = true;
             break;
         case SubmenuIndexDiagnostic:
