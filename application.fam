@@ -9,7 +9,12 @@ App(
         "storage",
         "notification",
     ],
-    stack_size=2 * 1024,
+    stack_size=8 * 1024,
+    sources=[
+        "*.c",
+        "scenes/*.c",
+        "lib/*/*.c",
+    ],
     fap_category="Tools",
     fap_icon="icons/chameleon_10px.png",
     fap_description="Control Chameleon Ultra via USB/Bluetooth - Manage slots, transfer tags, emulation",
